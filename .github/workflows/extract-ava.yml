@@ -14,10 +14,19 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Extract AVA ZIP
         run: |
-          mkdir unpacked
+          set -e
+
+          if [ ! -f ava-main.zip ]; then
+            echo "ERROR: ava-main.zip not found!"
+            exit 1
+          fi
+
+          mkdir -p unpacked
           unzip -q ava-main.zip -d unpacked
 
           ROOT=$(find unpacked -mindepth 1 -maxdepth 1 -type d | head -n 1)
@@ -28,12 +37,19 @@ jobs:
             cp -a unpacked/. .
           fi
 
-          rm -rf unpacked ava-main.zip
+          rm -rf unpacked
+          rm -f ava-main.zip
 
-      - name: Push Extracted Files
+      - name: Commit and Push Source Files
         run: |
+          set -e
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add -A
-          git commit -m "Extract AVA source code" || exit 0
+          git reset -- .github/workflows/
+
+          git commit -m "Extract complete AVA source code" || true
+
           git push origin HEAD:main
