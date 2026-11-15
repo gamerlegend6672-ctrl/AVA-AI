@@ -1,0 +1,96 @@
+digraph Ava {
+    rankdir=TB
+    fontname="JetBrains Mono, Courier New, monospace"
+    compound=true
+
+    // Global Styles
+    node [shape=box, style="bold", fontname="Helvetica,Arial,sans-serif", color=black, fillcolor=white]
+    edge [fontname="JetBrains Mono", fontsize=10, color=black]
+    graph [bgcolor=white, fontname="JetBrains Mono", labeljust="l"]
+
+
+    subgraph cluster_browser {
+        label = "Vue + WASM Voice AI Stack";
+        style=filled;
+        color=lightgrey;
+        node [style=filled, fillcolor=white];
+        // User layer
+        subgraph cluster_user {
+            label="[ User ]"
+            style=dashed
+            color=black
+
+            mic [label="Microphone"]
+            speaker [label="Speaker"]
+        }
+
+        // UI layer
+        subgraph cluster_ui {
+            label="[ UI Components ]"
+            style=dashed
+            color=black
+
+            app [label="App.vue"]
+            visualizer [label="WaveformVisualizer"]
+            about [label="AboutPopup"]
+        }
+
+        // Composables layer
+        subgraph cluster_composables {
+            label="[ Composables ]"
+            style=solid
+            penwidth=2
+            color=black
+
+            conversation [label="useConversation", penwidth=2]
+            whisper [label="useWhisper\n(VAD + Whisper)"]
+            wllama [label="useWllama"]
+            tts [label="useSpeechSynthesis"]
+            audioViz [label="useAudioVisualizer"]
+        }
+
+        // WASM/ONNX layer
+        subgraph cluster_wasm {
+            label="[ WASM/ONNX Models ]"
+            style=dashed
+            color=black
+
+            vadModel [label="Silero VAD v5\n(~2MB)"]
+            whisperModel [label="Whisper tiny-en\n(Transformers.js)"]
+            gemmaModel [label="Gemma 270M\n(~180MB)"]
+        }
+
+        // Browser API
+        subgraph cluster_apis {
+            label="[ Browser APIs ]"
+            style=dotted
+            color=black
+
+            webAudio [label="Web Audio API"]
+            speechSynth [label="SpeechSynthesis API"]
+        }
+
+    }
+    // Data flow
+    mic -> whisper [label="audio stream"]
+    whisper -> vadModel [label="detect speech"]
+    vadModel -> whisper [label="speech segments"]
+    whisper -> whisperModel [label="transcribe"]
+    whisperModel -> conversation [label="transcript"]
+
+    conversation -> wllama [label="prompt"]
+    wllama -> gemmaModel [label="WASM"]
+    gemmaModel -> conversation [label="response"]
+
+    conversation -> tts [label="sentences"]
+    tts -> speechSynth [label="speak"]
+    speechSynth -> speaker [label="audio"]
+
+    conversation -> audioViz [label="state"]
+    audioViz -> webAudio [label="analyze"]
+    audioViz -> visualizer [label="frequencies"]
+
+    app -> conversation [label="controls"]
+    app -> visualizer
+    app -> about
+}
